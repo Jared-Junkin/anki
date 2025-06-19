@@ -1,0 +1,52 @@
+/* Copyright: Ankitects Pty Ltd and contributors
+ * License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html */
+
+.card-info-placeholder {
+    margin: 0;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: grey;
+}
+
+.stats-table {
+    width: 100%;
+    border-spacing: 1em 0;
+    border-collapse: collapse;
+}
+
+.stats-table th {
+    font-weight: bold;
+    text-align: start;
+    padding-right: 1em;
+}
+
+.stats-table td {
+    text-align: start;
+    padding-left: 1em;
+}
+
+.review-log {
+    margin-top: 2em;
+}
+
+.review-log table {
+    margin: 0 auto;
+    width: 100%;
+    max-width: 800px;
+}
+
+.review-log th {
+    text-align: start;
+    padding: 0.2em 0.5em;
+}
+
+.review-log td {
+    text-align: start;
+    padding: 0.2em 0.5em;
+}
+
+.review-log tr:nth-child(even) {
+    background: rgba(128, 128, 128, 0.05);
+}

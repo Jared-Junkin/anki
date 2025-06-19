@@ -11,6 +11,7 @@ import aqt.forms
 import aqt.main
 from anki.decks import DeckId
 from anki.utils import is_mac
+from anki.stats import CardStats
 from aqt import gui_hooks
 from aqt.operations.deck import set_current_deck
 from aqt.qt import *
@@ -58,6 +59,20 @@ class NewDeckStats(QDialog):
             on_deck_changed=self.on_deck_changed,
             dyn=True,  # include filtered decks
         )
+
+        # Insert per-card selector dropdown
+        self.cardSelector = QComboBox(self)
+        # fetch all card IDs for the currently selected deck
+        deckId = self.mw.col.decks.current()["id"]
+        cids = self.mw.col.db.list(
+            "SELECT id FROM cards WHERE did = ?", deckId
+        )
+        # populate the combo box with those IDs
+        self.cardSelector.addItems([str(cid) for cid in cids])
+        # put it into the same layout that holds the deck chooser
+        f.deckArea.layout().addWidget(self.cardSelector)
+        # hook selection changes to your handler
+        self.cardSelector.currentIndexChanged.connect(self.onCardChange)
 
         b = f.buttonBox.addButton(
             tr.statistics_save_pdf(), QDialogButtonBox.ButtonRole.ActionRole
@@ -141,6 +156,81 @@ class NewDeckStats(QDialog):
 
     def refresh(self) -> None:
         self.form.web.load_sveltekit_page("graphs")
+
+    def onCardChange(self, idx: int) -> None:
+        # 1) build the CardInfo HTML
+        cid = int(self.cardSelector.currentText())
+        card = self.mw.col.get_card(cid)
+        html = CardStats(self.mw.col, card).report(include_revlog=False)
+
+        # (optional) DEBUG: print first 200 chars to confirm non-empty
+        print(">>> onCardChange: CardStats.report() returned (first 200 chars):")
+        print(html[:200].replace("\n", "\\n"))
+
+        # 2) swap out the old SvelteKit pane for LegacyStatsWebView
+        old_web = self.form.web
+        old_web.cleanup()
+        parent = old_web.parent()
+        layout = parent.layout()
+
+        legacy = LegacyStatsWebView(self.mw)
+        legacy.setMinimumHeight(400)
+
+        layout.replaceWidget(old_web, legacy)
+        old_web.deleteLater()
+        self.form.web = legacy
+
+        # ─── DEBUG BLOCK: Print cwd and check for each file's existence ───
+        import os, pathlib
+        print(">>> DEBUG: Current working directory is:", os.getcwd())
+        # The five files we expect to serve:
+        files_to_check = [
+            "js/vendor/jquery.min.js",
+            "js/vendor/bootstrap.bundle.min.js",
+            "pages/card-info.js",
+            "pages/card-info-base.css",
+            "pages/card-info.css",
+        ]
+        for suffix in files_to_check:
+            # 1) Override path (data/web/...)
+            override_path = pathlib.Path(os.getcwd()) / "data" / "web" / suffix
+            print(f"  override_path: {override_path} → exists? {override_path.exists()}")
+
+            # 2) Built-in fallback path (qt/aqt/web/...)
+            builtin_path = pathlib.Path(os.getcwd()) / "qt" / "aqt" / "web" / suffix
+            print(f"  builtin_path:  {builtin_path} → exists? {builtin_path.exists()}")
+        print(">>> DEBUG: End of existence check.")
+        # ────────────────────────────────────────────────────────────────────────
+
+        # 3) finally render the CardInfo snippet
+        html = html.replace('src="js/', 'src="/_anki/js/')
+        html = html.replace("src='js/", "src='/_anki/js/")
+        html = html.replace('href="pages/', 'href="/_anki/pages/')
+        html = html.replace("href='pages/", "href='/_anki/pages/")
+        html = html.replace('src="pages/', 'src="/_anki/pages/')
+        html = html.replace("src='pages/", "src='/_anki/pages/")
+        legacy.stdHtml(
+            """
+            <html>
+            <head>
+                <script src="/_anki/js/vendor/jquery.min.js"></script>
+                <script src="/_anki/js/vendor/bootstrap.bundle.min.js"></script>
+                <link href="/_anki/pages/card-info-base.css" rel="stylesheet" />
+                <link href="/_anki/pages/card-info.css" rel="stylesheet" />
+                <script src="/_anki/pages/card-info.js"></script>
+            </head>
+            <body>
+                %s
+            </body>
+            </html>
+            """ % html,
+            js=[],
+            css=[],
+            context=self,
+        )
+        print(">>> FINAL HTML PASSED TO stdHtml <<<")
+        print(html)
+
 
 
 class DeckStats(QDialog):

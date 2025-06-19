@@ -1,0 +1,50 @@
+/* Copyright: Ankitects Pty Ltd and contributors
+ * License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html */
+
+body {
+    margin: 1em;
+    padding: 0;
+    -webkit-user-select: none;
+    font-size: 12px;
+    background: var(--canvas);
+    color: var(--fg);
+}
+
+h3 {
+    margin: 1em 0 0.5em;
+}
+
+.night-mode {
+    filter: invert(100%) hue-rotate(180deg);
+}
+
+.stats-table {
+    margin: 1em auto;
+    border-spacing: 1em 0;
+    border-collapse: collapse;
+}
+
+.align-start {
+    text-align: start;
+}
+
+th {
+    font-weight: bold;
+    text-align: left;
+    padding: 0.2em 0.5em;
+}
+
+td {
+    text-align: left;
+    padding: 0.2em 0.5em;
+}
+
+:root {
+    --canvas: white;
+    --fg: black;
+}
+
+.night-mode:root {
+    --canvas: black;
+    --fg: white;
+}

@@ -193,8 +193,10 @@ def _text_response(code: HTTPStatus, text: str) -> Response:
 
 
 def _handle_local_file_request(request: LocalFileRequest) -> Response:
+    
     directory = request.root
     path = request.path
+    print(f"MEDIA SERVER: Trying to serve {directory} from {path}")
     try:
         isdir = os.path.isdir(os.path.join(directory, path))
     except ValueError:
